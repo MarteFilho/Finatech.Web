@@ -1,4 +1,5 @@
 export const professionalsituations = [
+  "Selecione",
   "Assalariado",
   "Autônomo",
   "Empresário",

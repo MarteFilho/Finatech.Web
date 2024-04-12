@@ -12,7 +12,6 @@ import { Alert, Stack } from '@mui/material';
 import { getBrands } from '../../redux/slices/vehicle';
 import { useDispatch, useSelector } from '../../redux/store';
 // mock
-import { licensestates as LICENSESTATES } from '../../_mock/map/licensestates';
 // auth
 import { fCurrency } from '../../utils/formatNumber';
 // components
@@ -27,12 +26,14 @@ import { useSnackbar } from '../../components/snackbar';
 
 AuthOnboardFinancingForm.propTypes = {
   endUser: PropTypes.string,
+  partnerKey: PropTypes.string,
+  partnerType: PropTypes.string,
   onNextStep: PropTypes.func,
 };
 
 // ----------------------------------------------------------------------
 
-export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
+export default function AuthOnboardFinancingForm({ endUser, partnerKey, partnerType, onNextStep }) {
   const axiosInstance = axios.create({ baseURL: 'https://veiculos.fipe.org.br' });
   const dispatch = useDispatch();
 
@@ -80,7 +81,6 @@ export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
       then: Yup.string().required('Selecione o número de parcelas'),
     }),
   });
-  
 
   const defaultValues = {
     defaultVehicle: true,
@@ -115,7 +115,6 @@ export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
   const [professionalSituation, setProfessionalSituation] = useState('Assalariado');
 
   const onSubmit = async (data) => {
-    console.log(data);
     const createFinancingRequest = {
       endUser,
       brand: data?.brand?.Label,
@@ -128,15 +127,17 @@ export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
       ),
       installment: data?.installment,
       defaultVehicle: data?.defaultVehicle,
+      partnerKey,
+      partnerType,
     };
 
     try {
-      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech.azurewebsites.net' });
+      onNextStep();
+      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech-api.azurewebsites.net' });
       const response = await axiosInstanceApi.post(
-        '/api/v1/endusers/financings',
+        '/api/v1/simulations',
         createFinancingRequest
       );
-      console.log(response);
       enqueueSnackbar('Financiamento criado com sucesso, preencha os dados seguintes', {
         variant: 'success',
       });
@@ -199,7 +200,7 @@ export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
   const getInstallmentsValues = useCallback(async (financingValue) => {
     const year = parseInt(selectedVehicleYear?.Value?.split('-')[0], 10);
     try {
-      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech.azurewebsites.net' });
+      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech-api.azurewebsites.net' });
       const response = await axiosInstanceApi.get('/api/v1/financing-factors/installment', {
         params: {
           year,
@@ -315,16 +316,6 @@ export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
 
           {selectedVehicleModel && (
             <>
-              <RHFAutocomplete
-                label="UF Licenciamento"
-                placeholder="Selecione o estado"
-                name="licenseState"
-                defaultValue={LICENSESTATES[0]}
-                options={LICENSESTATES.map((licenseState) => licenseState)}
-                getOptionLabel={(licenseState) => licenseState.nome ?? ''}
-                isOptionEqualToValue={(option, value) => option.sigla === value.sigla}
-                value={values.licenseState}
-              />
               <RHFNumberFormatField
                 name="value"
                 label="Valor a financiar"
@@ -335,7 +326,7 @@ export default function AuthOnboardFinancingForm({ endUser, onNextStep }) {
           )}
 
           {installmentValues?.length > 0 && (
-            <RHFSelect native name="installment" label="Parcelas">
+            <RHFSelect native name="installment" label="Parcelas" helperText='obs: valores aproximados de acordo com sua pontuação.'>
               <option value="" />
               {installmentValues.map((financingFactor) => (
                 <option key={financingFactor?.id} value={financingFactor?.id}>

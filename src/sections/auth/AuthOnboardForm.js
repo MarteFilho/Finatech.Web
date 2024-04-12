@@ -1,13 +1,14 @@
 import axios from 'axios';
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import * as Yup from 'yup';
-  // form
+// form
 import { yupResolver } from '@hookform/resolvers/yup';
 import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 import { Controller, useForm } from 'react-hook-form';
 // @mui
 import { LoadingButton } from '@mui/lab';
-import { Alert, Grid, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Grid, Stack, TextField, Typography, } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 // redux
 import { useDispatch, useSelector } from '../../redux/store';
@@ -20,6 +21,7 @@ import FormProvider, {
   RHFCheckbox,
   RHFInputMaskField,
   RHFTextField,
+  RHFAutocomplete
 } from '../../components/hook-form';
 import { useSnackbar } from '../../components/snackbar';
 import AuthOnboardAddressForm from './AuthOnboardAddressForm';
@@ -36,7 +38,12 @@ const STEPS = ['Dados pessoais', 'Endereço', 'Veículo', 'Dados profissionais']
 
 // ----------------------------------------------------------------------
 
-export default function AuthOnboardForm() {
+AuthOnboardForm.propTypes = {
+  partnerKey: PropTypes.string,
+  partnerType: PropTypes.string,
+};
+
+export default function AuthOnboardForm({ partnerKey, partnerType }) {
   const isMountedRef = useIsMountedRef();
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
@@ -59,7 +66,7 @@ export default function AuthOnboardForm() {
 
   const RegisterSchema = Yup.object().shape({
     fullName: Yup.string().required('Digite o seu nome completo'),
-    motherName: Yup.string().required('Digite o nome completo da sua mãe'),
+    motherName: Yup.string().min(10, 'O nome da mãe deve conter no minimo 10 caracteres').required('Digite o nome da mãe'),
     document: Yup.string()
       .length(14, 'O CPF deve conter 11 caracteres')
       .required('Preencha o documento')
@@ -76,6 +83,7 @@ export default function AuthOnboardForm() {
     birthDate: Yup.string().required('Digite a sua data de nascimento'),
     phone: Yup.string().required('Digite o seu telefone'),
     email: Yup.string().required('Digite o seu E-mail').email('O E-mail deve ser válido'),
+    hasDriverLicense: Yup.string().notOneOf(['Selecione'], 'Selecione uma opção').required('Selecione uma opção'),
   });
 
   const defaultValues = {
@@ -86,7 +94,7 @@ export default function AuthOnboardForm() {
     birthDate: '',
     phone: '',
     email: '',
-    hasDriverLicense: false,
+    hasDriverLicense: 'Selecione'
   };
 
   const methods = useForm({
@@ -114,6 +122,7 @@ export default function AuthOnboardForm() {
     const day = String(birthDate.getDate()).padStart(2, '0');
 
     const formattedBirthDate = `${year}-${month}-${day}`;
+
     const formatedDocument = data?.document?.replace('.', '').replace('.', '').replace('-', '');
     const formatedNationalIdentification = data?.nationalIdentification
       .replace('.', '')
@@ -130,10 +139,10 @@ export default function AuthOnboardForm() {
       birthDate: formattedBirthDate,
       email: data?.email,
       phone: cleanedPhoneNumber,
-      hasDriverLicense: data?.hasDriverLicense,
+      hasDriverLicense: data?.hasDriverLicense === 'Sim',
     };
     try {
-      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech.azurewebsites.net' });
+      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech-api.azurewebsites.net' });
       const response = await axiosInstanceApi.post('/api/v1/endusers', createEndUserRequest);
       setEndUser(response?.data);
       handleNextStep();
@@ -145,6 +154,11 @@ export default function AuthOnboardForm() {
       });
     }
   };
+
+  const handleReset = () => {
+    reset();
+    setActiveStep(0);
+  }
 
   return (
     <>
@@ -170,36 +184,44 @@ export default function AuthOnboardForm() {
               </Stack>
               <RHFTextField name="motherName" label="Nome da mãe (completo)" />
 
-              <Stack direction={{ xs: 'row', sm: 'row' }} spacing={2}>
-                <Controller
-                  name="birthDate"
-                  control={control}
-                  render={({ field, fieldState: { error } }) => (
-                    <DatePicker
-                      label="Data de nascimento"
-                      value={field.value}
-                      onChange={(newValue) => {
-                        field.onChange(newValue);
-                      }}
-                      inputFormat="dd/MM/yyyy"
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          fullWidth
-                          error={!!error}
-                          helperText={error?.message}
-                        />
-                      )}
-                      views={['day', 'month', 'year']}
-                    />
-                  )}
-                />
-                <RHFCheckbox name="hasDriverLicense" label="Possui CNH?" />
-              </Stack>
+              <Controller
+                name="birthDate"
+                control={control}
+                render={({ field, fieldState: { error } }) => (
+                  <DatePicker
+                    label="Data de nascimento"
+                    value={field.value}
+                    onChange={(newValue) => {
+                      field.onChange(newValue);
+                    }}
+                    inputFormat="dd/MM/yyyy"
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        fullWidth
+                        error={!!error}
+                        helperText={error?.message}
+                      />
+                    )}
+                    views={['day', 'month', 'year']}
+                  />
+                )}
+              />
+              <RHFAutocomplete
+                label="Possui CNH?"
+                placeholder="Selecione"
+                name="hasDriverLicense"
+                options={['Selecione', 'Sim', 'Não']}
+                isOptionEqualToValue={(option, value) => option === value}
+                onChange={(event, newValue) => {
+                  setValue('hasDriverLicense', newValue === 'Sim' ? 'Sim' : newValue);
+                }}
+              />
+
 
               <RHFTextField name="email" label="E-mail" />
 
-              <RHFInputMaskField name="phone" label="Telefone" mask="(+55) 99 99999-9999" />
+              <RHFInputMaskField name="phone" label="Celular" mask="(+55) 99 99999-9999" />
 
               <LoadingButton
                 fullWidth
@@ -228,33 +250,37 @@ export default function AuthOnboardForm() {
       )}
 
       {activeStep === 2 && (
-        <AuthOnboardFinancingForm endUser={endUser?.id} onNextStep={handleNextStep} />
+        <AuthOnboardFinancingForm endUser={endUser?.id} partnerKey={partnerKey} partnerType={partnerType} onNextStep={handleNextStep} />
       )}
 
       {activeStep === 3 && (
         <AuthOnboardProfessionalForm endUser={endUser?.id} onNextStep={handleNextStep} />
       )}
 
+
       {completed && (
         <>
-          <Grid container justifyContent="center">
-            {/* Added container for centering */}
-            <Grid item xs={12} md={8}>
-              <Stack spacing={2.5}>
-                <Typography variant="h4">Obrigado por confiar na Finatech!</Typography>
-                <Typography>
-                  Em breve um de nossos consultores entrará em contato com você.
-                </Typography>
-                <MotivationIllustration
-                  sx={{
-                    p: 3,
-                    width: 360,
-                    margin: { xs: 'auto', md: 'inherit' },
-                  }}
-                />
-              </Stack>
-            </Grid>
+          <Grid container justifyContent='center'>
+            <Typography variant="h4">Obrigado por confiar na Finatech!</Typography>
+            <Typography>
+              Em breve um de nossos consultores entrará em contato com você.
+            </Typography>
+            <MotivationIllustration
+              sx={{
+                p: 3,
+                width: 360,
+                margin: { xs: 'auto', md: 'inherit' },
+              }}
+            />
+
           </Grid>
+          <Grid container justifyContent='center'>
+
+            <LoadingButton variant="contained" color="primary" size="medium" onClick={handleReset} type="button">
+              Enviar outra simulação
+            </LoadingButton>
+          </Grid>
+
         </>
       )}
     </>

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // ----------------------------------------------------------------------
 
-const axiosInstance = axios.create({ baseURL: 'https://finatech.azurewebsites.net' });
+const axiosInstance = axios.create({ baseURL: 'https://finatech-api.azurewebsites.net' });
 
 axiosInstance.interceptors.response.use(
   (response) => response,

@@ -8,9 +8,6 @@ import InputMask from 'react-input-mask';
 // @mui
 import { LoadingButton } from '@mui/lab';
 import { Alert, Stack } from '@mui/material';
-// redux
-// hooks
-// auth
 // components
 import FormProvider, {
   RHFAutocomplete,
@@ -31,14 +28,15 @@ AuthOnboardProfessionalForm.propTypes = {
 
 export default function AuthOnboardProfessionalForm({ endUser, onNextStep }) {
   const CreateProfessionalSchema = Yup.object().shape({
-    professionalSituation: Yup.string().required('Selecione uma situação profissional'),
+    professionalSituation: Yup.string().nullable().notOneOf(['Selecione'], 'Selecione uma situação profissional').required('Selecione uma situação profissional'),
     grossIncome: Yup.string().required('Informe a renda mensal'),
     serviceTime: Yup.string().required('Informe o tempo de serviço'),
 
     company: Yup.lazy((value) => {
       if (
         values.professionalSituation === 'Assalariado' ||
-        values.professionalSituation === 'Funcionário Público'
+        values.professionalSituation === 'Funcionário Público' ||
+        values.professionalSituation === 'Empresário'
       ) {
         return Yup.object({
           name: Yup.string().required('Informe o nome da empresa'),
@@ -159,9 +157,7 @@ export default function AuthOnboardProfessionalForm({ endUser, onNextStep }) {
         };
       }
 
-      console.log(createOccupationRequest);
-
-      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech.azurewebsites.net' });
+      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech-api.azurewebsites.net' });
       const response = await axiosInstanceApi.post(
         '/api/v1/endusers/occupations',
         createOccupationRequest
@@ -217,10 +213,29 @@ export default function AuthOnboardProfessionalForm({ endUser, onNextStep }) {
             }}
           />
 
-          {(values.professionalSituation === 'Assalariado' ||
-            values.professionalSituation === 'Funcionário Público') && (
+          {values.professionalSituation === 'Assalariado' && (
             <>
               <RHFTextField name="company.name" label="Nome da empresa" />
+              {values.professionalSituation === 'Assalariado' && (
+                <RHFAutocomplete
+                  label="Profissão"
+                  placeholder="Selecione uma profissão"
+                  name="role"
+                  options={capitalizeWords(ROLES)}
+                  getOptionLabel={(option) => capitalizeWord(option)}
+                  isOptionEqualToValue={(option, value) => option === value}
+                />
+              )}
+            </>
+          )}
+
+          {values.professionalSituation === 'Empresário' && (
+            <RHFTextField name="company.name" label="Nome da sua empresa" />
+          )}
+
+          {values.professionalSituation === 'Funcionário Público' && (
+            <>
+              <RHFTextField name="company.name" label="Nome da instituição" />
               <RHFAutocomplete
                 label="Profissão"
                 placeholder="Selecione uma profissão"

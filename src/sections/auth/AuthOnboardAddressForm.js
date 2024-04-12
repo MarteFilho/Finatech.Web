@@ -78,7 +78,7 @@ export default function AuthOnboardAddressForm({ endUser, onNextStep }) {
         endUser,
       };
 
-      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech.azurewebsites.net' });
+      const axiosInstanceApi = axios.create({ baseURL: 'https://finatech-api.azurewebsites.net' });
       const response = await axiosInstanceApi.post(
         '/api/v1/endusers/adresses',
         createAddressRequest
@@ -91,11 +91,11 @@ export default function AuthOnboardAddressForm({ endUser, onNextStep }) {
 
   const handleSearchAddress = async (event) => {
     try {
-      const { data } = await axios.get(`https://brasilapi.com.br/api/cep/v2/${event.target.value}`);
-      setValue('city', data.city);
-      setValue('state', data.state);
-      setValue('neighborhood', data.neighborhood);
-      setValue('street', data.street);
+      const { data } = await axios.get(`https://viacep.com.br/ws/${event.target.value}/json/`);
+      setValue('city', data.localidade);
+      setValue('state', data.uf);
+      setValue('neighborhood', data.bairro);
+      setValue('street', data.logradouro);
     } catch (error) {
       console.error(error);
     }
@@ -126,7 +126,7 @@ export default function AuthOnboardAddressForm({ endUser, onNextStep }) {
 
           <RHFTextField name="neighborhood" label="Bairro" />
           <RHFTextField name="city" label="Cidade" />
-          <RHFTextField name="state" label="Estado" disabled />
+          <RHFTextField name="state" label="Estado" />
 
           <LoadingButton
             fullWidth

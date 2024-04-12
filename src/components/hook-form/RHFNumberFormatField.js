@@ -28,7 +28,7 @@ export default function RHFNumberFormatField({ name, helperText, ...other }) {
           max={999000}
           displayType="input"
           decimalScale={2}
-          fixedDecimalScale={true}
+          fixedDecimalScale
           valueIsNumericString={false}
           onValueChange={(values) => {
             field.onChange(values.floatValue || 0);

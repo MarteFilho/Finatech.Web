@@ -2865,4 +2865,5 @@ export const roles = [
   'webmaster',
   'zelador',
   'zootecnista',
+  'outros'
 ];

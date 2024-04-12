@@ -1,4 +1,5 @@
 // next
+import { useRouter } from 'next/router';
 // @mui
 import { Link, Stack, Typography } from '@mui/material';
 // layouts
@@ -10,6 +11,13 @@ import AuthOnboardForm from './AuthOnboardForm';
 // ----------------------------------------------------------------------
 
 export default function Onboard() {
+
+  const {
+    query: { key, type },
+  } = useRouter();
+
+  console.log(key, type);
+
   return (
     <LoginLayout title="Faça sua simulação">
       <Stack spacing={2} sx={{ mb: 5, position: 'relative' }}>
@@ -21,7 +29,7 @@ export default function Onboard() {
         </Typography>
       </Stack>
 
-      <AuthOnboardForm />
+      <AuthOnboardForm partnerKey={key} partnerType={type} />
 
       <Typography
         component="div"
